@@ -1,0 +1,117 @@
+\documentclass[a4paper,12pt]{article}
+\parindent 0pt      % sets leading space for paragraphs
+\usepackage{listings}
+
+\begin{document}
+
+\title{Getting Started with CUT}
+\author{Sergei Gnezdov}
+\date{\today}
+\maketitle
+
+\section{Introduction}
+
+Cut is a unit testing framework for C, C++ and Objective-C.  This
+document covers version 2.3 of CUT.  Our goal is to help you to get
+started with CUT.
+
+To download CUT, go to http://www.falvotech.com/projects/cut.php .
+
+\section{Getting Ready}
+
+Cut comes in source code form.  You will have to compile it to start
+using.  You should have no problem to compile it on BSD (FreeBSD) or
+Linux machines.
+
+To compile run
+\begin{verbatim}
+  make
+\end{verbatim}
+command without arguments.  This should create \verb|cutgen| application.
+
+\section{Test Driven Development in C with CUT}
+
+\subsection{Overview}
+
+To show the usage of CUT we will create a very simple C project.
+You will have to create a directory for your project.  It is
+referenced as Project directory further on.  The directory will
+contain the following files:
+
+\begin{itemize}
+\item Makefile
+\item Main.c
+\item Compute.h
+\item TestCompute.c
+\item Compute.c
+\item cut.h
+\end{itemize}
+
+\subsection{Creating Makefile}
+
+Create Makefile with the following content:
+
+\lstinputlisting{Makefile.tex}
+
+\subsection{Defining Sum Function}
+
+Compute.h header defines a function we want to test:
+
+\lstinputlisting{Compute.h}
+
+\subsection{Creating Test Case}
+
+For consistency, the test file name is based on the name of the header
+file beeing tested.  Append Test prefix and replace h with c
+extension.  TestCompute.c file has the following content:
+
+\lstinputlisting{TestCompute.c}
+
+TestCompute.c does not compile yet.  See it for yourself with the
+following command:
+\begin{verbatim}
+  make TestCompute.o
+\end{verbatim}
+The compileation fails because the compiler can't find cut.h file.
+Copy cut.h file from the cut-2.3 project directory into our project
+directory.
+
+Run 
+\begin{verbatim}
+  make TestCompute.o
+\end{verbatim}
+again.  This should create TestCompute.o file.
+
+\section{Implementing sum Function}
+
+Create Compute.c file:
+
+\lstinputlisting{Compute1.c}
+
+Run 
+\begin{verbatim}
+  make test 
+\end{verbatim}
+now.  It should fail with the message similar to the following:
+\begin{verbatim}
+  TestCompute.c(7): Check sum
+  TestCompute.c(7): Failed expression: 3 == sum(1,2)
+\end{verbatim}
+This is because we did not implement sum function yet.
+
+Change Compute.c to contain the following code:
+
+\lstinputlisting{Compute.c}
+
+and run \verb/make test/ again.  The test should pass now.
+
+\subsection{Creating main application}
+
+Since our function operates as expected we can create a main
+application now:
+
+\lstinputlisting{Main.c}
+
+Run \verb/make application/ to see the result.
+
+\end{document}

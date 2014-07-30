@@ -1,0 +1,14 @@
+I would like to thank the following people for helping to improve CUT,
+
+* William Tanksley, Jr.
+  - Original author of TestAssert
+  - Came up with the idea of merging CUT and TestAssert
+
+* Samuel A. Falvo II
+  - Original author of CUT
+  - Current maintainer
+
+* Sergei Gnezdov
+  - offered the first independent tutorial for CUT                
+  - Introduced the CUT FreeBSD Port
+

@@ -1,0 +1,12 @@
+Thu Dec  2 11:10:37 PST 2004  kc5tja@arrl.net
+  tagged cut-2.4rc1
+  * Cleaned up tests to take advantage of system-wide cut.h installation
+  * Added -i option to specify specific include file to use for cut.h
+  * Added install, uninstall/deinstall make targets
+  * Added top-level bin directory to make installation easier.
+  * Refactored directory layout for BSD/Slackware package generation
+
+Tue Apr 25 10:53:07 PDT 2006  kc5tja@arrl.net
+  Original repository somehow destroyed or corrupted on the original
+  website.  Rebuilding from scratch.
+

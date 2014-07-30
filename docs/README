@@ -1,0 +1,225 @@
+                            CUT DOCUMENTATION
+                               RELEASE 2.4
+
+                           Samuel A. Falvo II
+
+                   OSI Certified Open Source Software
+
+                                --------
+
+1.  What is CUT 2.4?
+
+    CUT 2.4 is intended to provide a framework with which you write "unit
+    tests", or as they're now called in the extreme programming
+    community, "programmer tests".
+
+    Unlike other unit test packages available for C or C++, CUT doesn't
+    strive to be an SUnit clone.  Instead, it starts from first
+    principles, solving the problem of establishing a flexible, accurate,
+    and easy to use unit test environment for a statically compiled
+    language that doesn't support run-time reflection.  It does this by
+    pre-parsing a set of test modules that you write, and then
+    automatically builds a custom test runner to invoke them.  You are
+    then responsible for compiling the test runner, linking, and
+    executing it.  See section 3 for how this is typically configured in
+    project Makefiles.
+
+1.1  What is a test runner?
+
+    A test runner is a stand-alone program that must satisfy the
+    following three goals:
+
+    1.  It must locate the unit tests that the programmer has written.
+        This can be done automatically (e.g., via reflection or "a
+        priori" knowledge) or manually (e.g., the user is responsible for
+        invoking some function in the program to register test suites
+        with it).
+
+    2.  It must execute the tests in a predefined, repeatable order.
+
+    3.  It must report, at a minimum, success or failure.  In the event
+        of a failure, a diagnostic message must be displayed to give the
+        programmer enough context to locate the error.
+
+    Other C/C++ unit test packages already have a test runner created for
+    you, and you are responsible for registering your tests with it.
+    This is a very unnatural, labor-intensive, and error-prone method of
+    satisfying the first condition.
+
+    In contrast, CUT relies on source code pre-parsing to build a list of
+    what functions exist, and when to call them, based on the order of
+    the test modules given on the command-line, and in the order they're
+    found in the test module.  Because this is all done automatically,
+    it is much more accurate, and it's faster.  The test runner also
+    consumes fewer system resources, which is a critical consideration
+    for embedded systems development.
+
+1.2  What is cutgen?
+
+    Because CUT in and of itself isn't a test runner, it has a tool
+    called cutgen that is responsible for generating the runner for you,
+    based on what it sees in your test modules.  cutgen also performs
+    some BASIC error detection, but for the most part, it assumes you
+    know what you are doing.  In the event that you make a mistake, no
+    worries -- the worse that can happen is you'll get compiler errors.
+
+2.  Invoking cutgen
+
+    cutgen takes as input a series of source files, and produces another
+    C source program as its output.  The output can either be stored to a
+    file, or be emitted to standard output.
+
+    cutgen -o output-file input-file [input-file [...]]
+
+    cutgen input-file [input-file [...]] > output-file
+
+    Note that the latter method is included only as a concession for CUT
+    2.0 compatibility, and is not recommended syntax for new projects.
+    Since you'll likely be needing to update your Makefiles to remove the
+    references to python (which CUT 2.0 and earlier required), you
+    probably should move towards the -o method, since all future CUT
+    versions will support that option.  Using CUT in file redirection
+    mode is deprecated, and will be removed starting with CUT 3.0.
+
+3.  Generally Accepted Makefile Conventions
+
+    Most projects that utilize CUT for unit testing will want a
+    regimented project layout.  The basic components of a project will
+    consist of three things:
+
+    a.  The application's core logic, called the application library,
+
+    b.  The shipped production code -- this is what your customers will
+        receive when they acquire your software, and finally,
+
+    c.  The test runner code -- this is what CUT is responsible for
+        producing.
+
+    To facilitate the automatic and error-free generation of these
+    products, you'll probably want to use a project build system, such as
+    Make or Ant.  I'll use Make in this section, because that's what I'm
+    most familiar with.  However, CUT should be relatively easy to
+    integrate into most other project building tools.
+
+3.1  Application Library 
+
+    The Application Library is core business logic of the application.
+    It typically does not have any inherent dependency on user interface,
+    since automated unit tests will rarely invoke functionality directly
+    via the user interface channels.
+
+    The application library need not be built as a dynamically linked
+    library, though in my experience, it is most convenient if it is.
+
+3.2  Production Code
+
+    Usually, the production code target is the top-most item in the build
+    system, so as to make it the default production when building the
+    software.  It will, by definition, rely largely on the application
+    library, and will provide the binding between the application library
+    and the intended user interface.
+
+    The simplest example of a production code implementation would be as
+    follows:
+
+        int main( int argc, char *argv[] )
+        {
+          Application *app = NewApplication( argc, argv );
+          return( AppMain( app ) );
+        }
+
+    Here, NewApplication() and AppMain() would be defined in your
+    application library.  Placing them in your application library does
+    two basic things.  It splits the initialization and execution of your
+    program apart, so that each can be independently unit tested.  For
+    example, a whole battery of unit tests can be used against
+    NewApplication() to verify the global effects of command-line
+    parameters are within expectations, without actually having to invoke
+    the core functionality of the software every time.
+
+    Note also that this kind of modularity is convenient to have for
+    another important reason: it enables multiple instances of the
+    program to be running without having to reload the application,
+    basically for free.  Thus, if you're working on a word processor or
+    spreadsheet, for example, each document can be represented by its own
+    "Application" object.  The application's logic doesn't have to
+    explicitly handle the case of multiple documents within a single
+    application instance.  Therefore, the whole Microsoft Windows concept
+    of MDI goes away (except perhaps as a user interface issue), thus
+    making the entire logic of the program simpler, and substantially
+    easier to test.  A typical main function for this type of program
+    would utilize a dynamic list of application objects, and wouldn't
+    quit until the list was empty.
+
+3.3  Test Runner
+
+    The test runner is generated dynamically using the cutgen tool.  The
+    Makefile production to generate this is most often called "check",
+    and the traditional name for the test runner is "cutcheck".
+
+    Most Makefiles also have a production or macro called TESTS which
+    lists the source files of the unit tests in the project.
+
+3.4  Sample Makefile
+
+    MODULES = keyboard window mouse tables
+    OBJS = $(MODULES:%=%.o)
+    TESTS = $(MODULES:%=test_%.c)
+    LIBS = ...etc...
+
+    .c.o:
+            $(CC) $(CCOPTS) $(DEBUG) -o $@ $<
+
+    # help  (DEFAULT PRODUCTION)
+
+    help:
+            echo "Type 'make application' to build the application."
+            echo "Type 'make check' to run unit/programmer tests."
+
+    # Production code generation
+
+    application: $(OBJS) main.o
+            $(LD) $(LDOPTS) $(MODULES:%=%.o) main.o $(LIBS) -o TableView
+
+    # Unit Test Production
+
+    check: $(OBJS) $(TESTS) cutcheck.c
+            cutgen -o cutcheck.c $(TESTS)
+            $(CC) $(CCOPTS) $(DEBUG) -o cutcheck cutcheck.c $(OBJS) $(TESTS) $(LIBS)
+            ./cutcheck
+
+4.  What Does a Test Module Look Like?
+
+    Eventually, a more realistic example will appear here.  For the time
+    being, however, the following (contrived) example will show you the
+    basic methods of using bring-ups, tear-downs, and test functions.
+
+        #include "cut.h"
+        #include <stdio.h>
+
+        void __CUT_BRINGUP__Explode( void )
+        {
+          printf( "__CUT_BRINGUP__Explode() called!\n" );
+          ASSERT( 2 == 2, "Making sure environment is correct." );
+        }
+
+        void __CUT__TestA( void )
+        {
+          ASSERT( 1 == 1, "One should always be equal to one." );
+        }
+
+        void __CUT__TestB( void )
+        {
+          ASSERT( 1 != 0, "One is never zero." );
+        }
+
+        void __CUT__TestC( void )
+        {
+          ASSERT( 1 > 2, "One can never be greater than two." );
+        }
+
+        void __CUT_TAKEDOWN__Explode( void )
+        {
+          printf( "__CUT_TAKEDOWN__Explode() called!\n" );
+        }
+
