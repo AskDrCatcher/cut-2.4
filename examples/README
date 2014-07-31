@@ -1,0 +1,2 @@
+1. Make sure the cutgen is added to your path
+2. Make sure to add -Idir to your gcc OPTS so it can recognize cut-2/cut.h
